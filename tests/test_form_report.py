@@ -34,7 +34,5 @@ class TestIsCSVFile(unittest.TestCase):
         self.assertEqual(form_report.is_csv_file('/tests/ОТДЕЛ ПРОДАЖ - Сентябрь.csv'), True)
 
 
-
-
 if __name__ == '__main__':
     unittest.main()
