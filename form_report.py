@@ -185,10 +185,5 @@ def main():
     pprint.pprint(services)
 
 
-def test_brench():
-    pass
-    # новые изменения
-
-
 if __name__ == '__main__':
     main()

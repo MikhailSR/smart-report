@@ -34,10 +34,5 @@ class TestIsCSVFile(unittest.TestCase):
         self.assertEqual(form_report.is_csv_file('/tests/ОТДЕЛ ПРОДАЖ - Сентябрь.csv'), True)
 
 
-class TestTestBrench(unittest.TestCase):
-    def tests(self):
-        self.assertEqual(form_report.test_brench(), None)
-
-
 if __name__ == '__main__':
     unittest.main()
