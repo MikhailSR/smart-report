@@ -27,11 +27,11 @@ class TestNormalizeNumber(unittest.TestCase):
 
 class TestIsCSVFile(unittest.TestCase):
     def tests(self):
-        self.assertEqual(form_report.is_csv_file(''), False)
-        self.assertEqual(form_report.is_csv_file('D:\Work & Projects\Programming_projects'), False)
-        self.assertEqual(form_report.is_csv_file('ОТДЕЛ ПРОДАЖ - Сентябрь.json'), False)
-        self.assertEqual(form_report.is_csv_file('ОТДЕЛ ПРОДАЖ - Сентябрь.csv'), True)
-        self.assertEqual(form_report.is_csv_file('/tests/ОТДЕЛ ПРОДАЖ - Сентябрь.csv'), True)
+        self.assertFalse(form_report.is_csv_file(''))
+        self.assertFalse(form_report.is_csv_file('D:\Work & Projects\Programming_projects'), False)
+        self.assertFalse(form_report.is_csv_file('ОТДЕЛ ПРОДАЖ - Сентябрь.json'), False)
+        self.assertTrue(form_report.is_csv_file('ОТДЕЛ ПРОДАЖ - Сентябрь.csv'), True)
+        self.assertTrue(form_report.is_csv_file('/tests/ОТДЕЛ ПРОДАЖ - Сентябрь.csv'), True)
 
 
 if __name__ == '__main__':
