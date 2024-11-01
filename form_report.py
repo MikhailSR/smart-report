@@ -58,7 +58,6 @@ def generate_report_file(services: dict, path: str) -> int:
             sums: str = ' + '.join(value[2])
             file.write(f'{service}\n{value[1]} шт: {sums}\n💰Сумма {value[0]}\n\n')
 
-    easygui.msgbox('Отчет готов! находиться на рабочем столе')
     return 1
 
 
@@ -181,7 +180,9 @@ def main():
         path = easygui.fileopenbox()
 
     services: dict = process_service_data(path)
-    generate_report_file(services, path)
+    if generate_report_file(services, path):
+        easygui.msgbox('Отчет готов! находиться на рабочем столе')
+
     pprint.pprint(services)
 
 
