@@ -15,6 +15,22 @@ import os
 import sys
 
 
+def calculation_metrics(services: dict) -> dict:
+    # TASK: вынести в эту функцию расчет метрик, из функции generate_report_file. В функции generate_report_file
+    # оставить только файла (запись в него)
+
+    metrics: dict = {'revenue': 0.0,
+                     'пошлина_первод': 0.0,
+                     'без_пошлин_переводов': 0.0,
+                     'обмен_прав': 0.0,
+                     'сита': 0.0,
+                     'справка': 0.0,
+                     'без_пошлин_переводов_сит_справок_обмена_прав': 0.0,
+                     'без_пошлин_переводов_сит_справок_с_обменом_прав': 0.0}
+
+    revenue: float = round(sum(item[0] for item in services.values()), 2)
+
+
 def generate_report_file(services: dict, path: str) -> int:
     """Возвращает 1, если report-файл был сформирован и закрыт.
     Файл формируется в заранее оговоренном формате. Формат меняется по необходимости.
