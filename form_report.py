@@ -221,6 +221,21 @@ def main():
     pprint.pprint(services)
 
 
+# if __name__ == '__main__':
+#     main()
+
+
+class Cat:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+
+    def meow(self):
+        print(f'{self.name} said "Meow!"')
+
 if __name__ == '__main__':
-    main()
-print()
+    tom = Cat('Tom', 2)
+    angela = Cat('Angela', 2)
+    tom.meow()
+    angela.meow()
