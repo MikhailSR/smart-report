@@ -16,11 +16,17 @@ import sys
 
 
 def calculation_metrics(services: dict) -> dict:
-    # TASK: вынести в эту функцию расчет метрик, из функции generate_report_file. В функции generate_report_file
-    # оставить только файла (запись в него)
+    """
+    Возвращает словарь расчитанных основных метрик.
+    Args:
+        services (dict): словарь на основании которого общитываются метрики
+
+    Returns:
+        dict[str:float]: Ключи словаря - имена метрик. Занчения словаря - расчитанные значения
+    """
 
     metrics: dict = {'revenue': 0.0,
-                     'пошлина_первод': 0.0,
+                     'пошлина_перевод': 0.0,
                      'без_пошлин_переводов': 0.0,
                      'обмен_прав': 0.0,
                      'сита': 0.0,
@@ -29,15 +35,38 @@ def calculation_metrics(services: dict) -> dict:
                      'без_пошлин_переводов_сит_справок_с_обменом_прав': 0.0}
 
     revenue: float = round(sum(item[0] for item in services.values()), 2)
+    metrics['revenue'] = revenue
+
+    poslina_and_perevod: float = round(
+        sum(value[0] for key, value in services.items() if key in ('Пошлина', 'Перевод')),
+        2)
+    metrics['пошлина_перевод'] = poslina_and_perevod
+
+    sita: float = services.get('Сита')[0]
+    metrics['сита'] = sita
+
+    spravka: float = services.get('Справка')[0]
+    metrics['справка'] = spravka
+
+    obmen_prav: float = services.get('Под ключ права обмен')[0]
+    metrics['обмен_прав'] = obmen_prav
+
+    metrics['без_пошлин_переводов'] = revenue - poslina_and_perevod
+    metrics[
+        'без_пошлин_переводов_сит_справок_обмена_прав'] = revenue - poslina_and_perevod - sita - spravka - obmen_prav
+    metrics['без_пошлин_переводов_сит_справок_с_обменом_прав'] = revenue - poslina_and_perevod - sita - spravka
+
+    return metrics
 
 
-def generate_report_file(services: dict, path: str) -> int:
+def generate_report_file(services: dict, path: str, metrics: dict) -> int:
     """Возвращает 1, если report-файл был сформирован и закрыт.
     Файл формируется в заранее оговоренном формате. Формат меняется по необходимости.
 
     Args:
         services (dict): словарь с данными для записи в отчет-файл.
         path (str): путь к .csv файлу, на основе которого был сформирован словарь services.
+        metrics (dict): словарь расчитанных метрик для вывода
 
     Returns:
         1 (int): в случае успешного закрытия файла
@@ -50,22 +79,12 @@ def generate_report_file(services: dict, path: str) -> int:
     result_file: str = fr"{directory_to_write}\{file_result_name}"
 
     with open(result_file, 'w', encoding='utf8') as file:
-        revenue: float = round(sum(item[0] for item in services.values()), 2)
-        file.write(f'Расчет\nОборот: {revenue}\n\n')
-
-        poslina_and_perevod: float = round(
-            sum(value[0] for key, value in services.items() if key in ('Пошлина', 'Перевод')),
-            2)
-        file.write(f'🧡Без пошлин и переводов: {revenue - poslina_and_perevod}\n\n')
-
-        sita: float = services.get('Сита')[0]
-        spravka: float = services.get('Справка')[0]
-        obmen_prav: float = services.get('Под ключ права обмен')[0]
+        file.write(f'Расчет\nОборот: {metrics["revenue"]}\n\n')
+        file.write(f'🧡Без пошлин и переводов: {metrics["без_пошлин_переводов"]}\n\n')
         file.write(
-            f'🩵Без пошлин, переводов, сит, справок и обмена прав: {revenue - poslina_and_perevod - sita - spravka - obmen_prav}\n\n')
-
+            f'🩵Без пошлин, переводов, сит, справок и обмена прав: {metrics["без_пошлин_переводов_сит_справок_обмена_прав"]}\n\n')
         file.write(
-            f'💚Без пошлин, переводов, сит, справок, с обменом прав: {revenue - poslina_and_perevod - sita - spravka}\n\n')
+            f'💚Без пошлин, переводов, сит, справок, с обменом прав: {metrics["без_пошлин_переводов_сит_справок_с_обменом_прав"]}\n\n')
 
         for service, value in services.items():
             number_sales_service: int = value[1]
@@ -196,7 +215,7 @@ def main():
         path = easygui.fileopenbox()
 
     services: dict = process_service_data(path)
-    if generate_report_file(services, path):
+    if generate_report_file(services, path, calculation_metrics(services)):
         easygui.msgbox('Отчет готов! находиться на рабочем столе')
 
     pprint.pprint(services)
