@@ -234,6 +234,9 @@ class Cat:
     def meow(self):
         print(f'{self.name} said "Meow!"')
 
+    def die(self):
+        print('This cat was kill!')
+
 if __name__ == '__main__':
     tom = Cat('Tom', 2)
     angela = Cat('Angela', 2)
