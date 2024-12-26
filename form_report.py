@@ -169,7 +169,9 @@ def process_service_data(path_file: str) -> dict[str, ServiceInfo]:
         'Пошлина': {'summa': 0, 'count': 0, 'details': []},
         'Перевод': {'summa': 0, 'count': 0, 'details': []},
         'Справка': {'summa': 0, 'count': 0, 'details': []},
-        'Другая услуга': {'summa': 0, 'count': 0, 'details': []}
+        'Другая услуга': {'summa': 0, 'count': 0, 'details': []},
+        'Модификация': {'summa': 0, 'count': 0, 'details': []},
+        'Цифровой кочевник': {'summa': 0, 'count': 0, 'details': []}
     }
 
     with open(path_file, encoding='utf-8') as file:
@@ -182,10 +184,14 @@ def process_service_data(path_file: str) -> dict[str, ServiceInfo]:
                 continue
 
             summa: str = normalize_number(row[1])
+            got_service = services.get(service, -1)
+            if got_service == -1:
+                services[service] = {'summa': 0, 'count': 0, 'details': []}
+                got_service = services.get(service)
 
-            services[service]['summa'] += float(summa)
-            services[service]['count'] += 1
-            services[service]['details'].append(summa)
+            got_service['summa'] += float(summa)
+            got_service['count'] += 1
+            got_service['details'].append(summa)
 
     return services
 
