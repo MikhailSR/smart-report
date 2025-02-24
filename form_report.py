@@ -9,16 +9,14 @@
 
 import csv
 import pprint
-import easygui
 import datetime
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from typing import TypedDict
 
 global path
 root = tk.Tk()
-import sys
-from typing import TypedDict
 
 
 class ServiceInfo(TypedDict):
