@@ -9,6 +9,7 @@
 
 import csv
 import pprint
+import easygui
 import datetime
 import os
 import tkinter as tk
@@ -16,6 +17,44 @@ from tkinter import filedialog, messagebox
 
 global path
 root = tk.Tk()
+import sys
+from typing import TypedDict
+
+
+class ServiceInfo(TypedDict):
+    summa: float
+    count: int
+    details: list[str]
+
+
+def format_number_with_spaces(number: int | float) -> str:
+    """Возвращает отформатированное число: разделяет тысячные пробелом, заменят точку на запятую, удаляет незначимый ноль.
+        Например, число 1200, функция вернет "1 200".
+    Args:
+        number (int|float): число для форматирования
+
+    Returns:
+        str: строка с отформатированным числом
+    """
+
+    def delete_nonsignificant_zero(num: float):
+        if num % 1 == 0:
+            num = int(num)
+        return num
+
+    number = delete_nonsignificant_zero(number)
+
+    # Разделяем целую и дробную части
+    integer_part, *decimal_part = str(number).split(".")
+
+    # Форматируем целую часть с пробелами
+    formatted_integer_part = f"{int(integer_part):,}".replace(",", " ")
+
+    # Собираем обратно с дробной частью, если она есть
+    if decimal_part:
+        return f"{formatted_integer_part},{decimal_part[0]}"
+    else:
+        return formatted_integer_part
 
 
 def calculation_metrics(services: dict) -> dict:
@@ -37,21 +76,21 @@ def calculation_metrics(services: dict) -> dict:
                      'без_пошлин_переводов_сит_справок_обмена_прав': 0.0,
                      'без_пошлин_переводов_сит_справок_с_обменом_прав': 0.0}
 
-    revenue: float = round(sum(item[0] for item in services.values()), 2)
+    revenue: float = round(sum(item['summa'] for item in services.values()), 2)
     metrics['revenue'] = revenue
 
     poslina_and_perevod: float = round(
-        sum(value[0] for key, value in services.items() if key in ('Пошлина', 'Перевод')),
+        sum(value['summa'] for key, value in services.items() if key in ('Пошлина', 'Перевод')),
         2)
     metrics['пошлина_перевод'] = poslina_and_perevod
 
-    sita: float = services.get('Сита')[0]
+    sita: float = services.get('Сита')['summa']
     metrics['сита'] = sita
 
-    spravka: float = services.get('Справка')[0]
+    spravka: float = services.get('Справка')['summa']
     metrics['справка'] = spravka
 
-    obmen_prav: float = services.get('Под ключ права обмен')[0]
+    obmen_prav: float = services.get('Под ключ права обмен')['summa']
     metrics['обмен_прав'] = obmen_prav
 
     metrics['без_пошлин_переводов'] = revenue - poslina_and_perevod
@@ -81,25 +120,31 @@ def generate_report_file(services: dict, path: str, metrics: dict) -> int:
     directory_to_write: str = home_directory + r'\Desktop'
     result_file: str = fr"{directory_to_write}\{file_result_name}"
 
+    metrics = metrics.copy()
+    # Форматирую числа для записи в файл
+    for key, value in metrics.items():
+        metrics[key] = format_number_with_spaces(value)
+
     with open(result_file, 'w', encoding='utf8') as file:
-        file.write(f'Расчет\nОборот: {metrics["revenue"]}\n\n')
-        file.write(f'🧡Без пошлин и переводов: {metrics["без_пошлин_переводов"]}\n\n')
+        file.write(f'Расчет\nОборот: {metrics["revenue"]} евро\n\n')
+        file.write(f'🧡Без пошлин и переводов: {metrics["без_пошлин_переводов"]} евро\n\n')
         file.write(
-            f'🩵Без пошлин, переводов, сит, справок и обмена прав: {metrics["без_пошлин_переводов_сит_справок_обмена_прав"]}\n\n')
+            f'🩵Без пошлин, переводов, сит, справок и обмена прав: {metrics["без_пошлин_переводов_сит_справок_обмена_прав"]} евро\n\n')
         file.write(
-            f'💚Без пошлин, переводов, сит, справок, с обменом прав: {metrics["без_пошлин_переводов_сит_справок_с_обменом_прав"]}\n\n')
+            f'💚Без пошлин, переводов, сит, справок, с обменом прав: {metrics["без_пошлин_переводов_сит_справок_с_обменом_прав"]} евро\n\n')
 
         for service, value in services.items():
-            number_sales_service: int = value[1]
+            number_sales_service: int = value['count']
             if number_sales_service == 0:
                 continue
-            sums: str = ' + '.join(value[2])
-            file.write(f'{service}\n{value[1]} шт: {sums}\n💰Сумма {value[0]}\n\n')
+            sums: str = ' + '.join(value['details'])
+            total_sum = format_number_with_spaces(value["summa"])
+            file.write(f'{service}\n{value["count"]} шт: {sums}\n💰Сумма {total_sum} евро\n\n')
 
     return 1
 
 
-def process_service_data(path_file: str) -> dict[str:list[float, int, list]]:
+def process_service_data(path_file: str) -> dict[str, ServiceInfo]:
     """Возвращает сформированный словарь услуг. Значения словаря в таком формате (сумма_общая: float, количество:int,
     суммы_отдельно: list[str]).
 
@@ -111,28 +156,32 @@ def process_service_data(path_file: str) -> dict[str:list[float, int, list]]:
         dict: заполненный словарь, в формате услуга: [сумма_общая, количество, суммы_отдельно].
     """
 
-    services: dict[str:list[float, int, list]] = {'Консультация': [0, 0, []],
-                                                  'Бакалавр': [0, 0, []],
-                                                  'Магистратура': [0, 0, []],
-                                                  'NIE': [0, 0, []],
-                                                  'Доверенность': [0, 0, []],
-                                                  'ФОП/автономо': [0, 0, []],
-                                                  'Школа испанского': [0, 0, []],
-                                                  'Омологация аттестата': [0, 0, []],
-                                                  'Омологация диплома': [0, 0, []],
-                                                  'ВЗ1': [0, 0, []],
-                                                  'Под ключ права обмен': [0, 0, []],
-                                                  'Сита': [0, 0, []],
-                                                  'Продление студ визы': [0, 0, []],
-                                                  'Языковая школа': [0, 0, []],
-                                                  'Пошлина': [0, 0, []],
-                                                  'Перевод': [0, 0, []],
-                                                  'Справка': [0, 0, []],
-                                                  'Другая услуга': [0, 0, []]}
+    services: dict[str, ServiceInfo] = {
+        'Консультация': {'summa': 0, 'count': 0, 'details': []},
+        'Бакалавр': {'summa': 0, 'count': 0, 'details': []},
+        'Магистратура': {'summa': 0, 'count': 0, 'details': []},
+        'NIE': {'summa': 0, 'count': 0, 'details': []},
+        'Доверенность': {'summa': 0, 'count': 0, 'details': []},
+        'ФОП/автономо': {'summa': 0, 'count': 0, 'details': []},
+        'Школа испанского': {'summa': 0, 'count': 0, 'details': []},
+        'Омологация аттестата': {'summa': 0, 'count': 0, 'details': []},
+        'Омологация диплома': {'summa': 0, 'count': 0, 'details': []},
+        'ВЗ1': {'summa': 0, 'count': 0, 'details': []},
+        'Под ключ права обмен': {'summa': 0, 'count': 0, 'details': []},
+        'Сита': {'summa': 0, 'count': 0, 'details': []},
+        'Продление студ визы': {'summa': 0, 'count': 0, 'details': []},
+        'Языковая школа': {'summa': 0, 'count': 0, 'details': []},
+        'Пошлина': {'summa': 0, 'count': 0, 'details': []},
+        'Перевод': {'summa': 0, 'count': 0, 'details': []},
+        'Справка': {'summa': 0, 'count': 0, 'details': []},
+        'Другая услуга': {'summa': 0, 'count': 0, 'details': []},
+        'Модификация': {'summa': 0, 'count': 0, 'details': []},
+        'Цифровой кочевник': {'summa': 0, 'count': 0, 'details': []}
+    }
 
     with open(path_file, encoding='utf-8') as file:
         reader = csv.reader(file)
-        headers = next(reader)
+        head = next(reader)
 
         # заполнение словаря
         for row in reader:
@@ -141,12 +190,14 @@ def process_service_data(path_file: str) -> dict[str:list[float, int, list]]:
                 continue
 
             summa: str = normalize_number(row[1])
-            # сумма
-            services[service][0] += float(summa)
-            # количество
-            services[service][1] += 1
-            # суммы_отдельно
-            services[service][2].append(summa)
+            got_service = services.get(service, -1)
+            if got_service == -1:
+                services[service] = {'summa': 0, 'count': 0, 'details': []}
+                got_service = services.get(service)
+
+            got_service['summa'] += float(summa)
+            got_service['count'] += 1
+            got_service['details'].append(summa)
 
     return services
 
