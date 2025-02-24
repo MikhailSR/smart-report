@@ -9,10 +9,13 @@
 
 import csv
 import pprint
-import easygui
 import datetime
 import os
-import sys
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+global path
+root = tk.Tk()
 
 
 def calculation_metrics(services: dict) -> dict:
@@ -195,28 +198,59 @@ def is_csv_file(path: str) -> bool:
     return False
 
 
-def main():
-    button: str = easygui.buttonbox('Выберите .csv файл.\nПредварительно его нужно испортировать из Google Sheet.',
-                                    title='Формирование отчета за месяц', choices=['Выбрать файл', 'Закрыть'])
-    if button is None:
-        sys.exit()
-    if button == 'Закрыть':
-        sys.exit()
+def select_file():
+    file_path = filedialog.askopenfilename()
 
-    path: str = easygui.fileopenbox()
-    while not is_csv_file(path):
-        easygui.msgbox(title='Ошибка', msg='Выбран неверный файл! С типом НЕ .csv\nПопробуйте еще раз!')
-        button = easygui.buttonbox('Выберите .csv файл.\nПредварительно его нужно испортировать из Google Sheet.',
-                                   title='Формирование отчета за месяц', choices=['Выбрать файл', 'Закрыть'])
-        if button is None:
-            sys.exit()
-        if button == 'Закрыть':
-            sys.exit()
-        path = easygui.fileopenbox()
+    if file_path:
+        while not is_csv_file(file_path) and file_path != '':
+            messagebox.showwarning(title='Ошибка!',
+                                   message='Выбран неверный файл! С типом НЕ .csv\nПопробуйте еще раз!')
+            file_path = filedialog.askopenfilename()
+
+        if file_path:
+            messagebox.showinfo("Файл выбран", f"Вы выбрали файл: {file_path}")
+            root.destroy()
+
+    global path
+    path = file_path
+
+
+def main():
+    # Создание основного окна
+    root.title('Формирование отчета за месяц')
+    root.geometry("450x250")
+    root.configure(bg="#ffffff")
+
+    message_text = 'Выберите .csv файл.\nПредварительно его нужно испортировать из Google Sheet.'
+    # Многострочный виджет для текста, сделанный неподвижным (без прокрутки)
+    text_message = tk.Label(root, text=message_text, font=("nunito", 12), bg="#ffffff", fg="#333333", wraplength=400,
+                            justify="center")
+    text_message.pack(pady=(30, 20))  # Отступы сверху и между текстом и кнопкой
+
+    button = tk.Button(root, text="Выбрать файл",
+                       font=("nunito", 11, "bold"),
+                       bg="#007BFF", fg="white",
+                       activebackground="#0056b3",
+                       activeforeground="white",
+                       relief="flat", borderwidth=0,
+                       highlightthickness=0,
+                       padx=20, pady=8,
+                       command=select_file)
+    button.pack()
+
+    # Настройка закругленных углов для кнопки через `canvas`
+    button.config(cursor="hand2", bd=0, highlightthickness=0, relief="solid")
+    button.pack_propagate(False)
+    root.mainloop()
+
+    # обработка полученного файла
+    if not path:
+        print('INFO: Программа закрыта пользователем')
+        return 1
 
     services: dict = process_service_data(path)
     if generate_report_file(services, path, calculation_metrics(services)):
-        easygui.msgbox('Отчет готов! находиться на рабочем столе')
+        messagebox.showinfo(message='Ваш отчет готов, находиться на рабочем столе!')
 
     pprint.pprint(services)
 
