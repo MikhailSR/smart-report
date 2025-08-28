@@ -183,7 +183,7 @@ def process_service_data(path_file: str) -> dict[str, ServiceInfo]:
 
         # заполнение словаря
         for row in reader:
-            service: str = row[3]
+            service: str = row[7]
             if service == '' or service.isdigit():
                 continue
 
@@ -215,15 +215,16 @@ def exstract_basename(path: str) -> str:
 
 def normalize_number(number: str) -> str:
     """Возвращает строку с числом, приведенным к правильному виду. Запятая заменяется на точку,
-    начальные и конучные пробелы удаляются.
+    пробелы удаляются, удалены неразрывные пробелы (\xa0).
 
     Args:
         number (str): число для форматирования.
 
     Returns:
-        str: иоторматированное число"""
+        str: отформатированное число"""
 
-    number = number.strip()
+    number = number.replace("\xa0", "")
+    number = number.replace(" ", "")
     number = number.replace(',', '.')
     return number
 
