@@ -2,3 +2,4 @@
 /output/
 /.pytest_cache/
 /.devcontainer
+/tests/test_data/
