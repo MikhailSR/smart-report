@@ -1,18 +1,16 @@
 """
-Основная задача этого файла сфорировать текстовый файл-отчет, по шаблону. Внутри содержиться информация о суммах,
+Задача этого файла сфорировать текстовое сообщение-отчет, по шаблону. Внутри содержиться информация о суммах,
 количестве проданных услуг, обороте и других метриках, которые расчитываються на основе csv файла. CSV файл
-предварительно импортируется из google sheet, по одельному месяцу.
-
-В этом модуле использована библиотека easygui для созания пользовательского интефейса. При расщирении функционала,
-она будет заменена на Tkinter или PyQt5.
+предварительно импортируется из Google Sheets, по одельному месяцу.
 """
 
+import io
 import streamlit as st
 import csv
 import pprint
-import datetime
 import os
 
+from io import StringIO
 from typing import TypedDict
 
 
@@ -23,8 +21,8 @@ class ServiceInfo(TypedDict):
 
 
 def format_number_with_spaces(number: int | float) -> str:
-    """Возвращает отформатированное число: разделяет тысячные пробелом, заменят точку на запятую, удаляет незначимый ноль.
-        Например, число 1200, функция вернет "1 200".
+    """Возвращает отформатированное число: разделяет тысячные пробелом, заменят точку на запятую, удаляет незначимый ноль
+        Например, число 1200, функция вернет "1 200"
     Args:
         number (int|float): число для форматирования
 
@@ -53,8 +51,8 @@ def format_number_with_spaces(number: int | float) -> str:
 
 
 def calculation_metrics(services: dict) -> dict:
-    """
-    Возвращает словарь расчитанных основных метрик.
+    """Возвращает словарь расчитанных основных метрик
+
     Args:
         services (dict): словарь на основании которого общитываются метрики
 
@@ -90,65 +88,72 @@ def calculation_metrics(services: dict) -> dict:
 
     metrics['без_пошлин_переводов'] = revenue - poslina_and_perevod
     metrics[
-        'без_пошлин_переводов_сит_справок_обмена_прав'] = revenue - poslina_and_perevod - sita - spravka - obmen_prav
-    metrics['без_пошлин_переводов_сит_справок_с_обменом_прав'] = revenue - poslina_and_perevod - sita - spravka
+        'без_пошлин_переводов_сит_справок_обмена_прав'] = round(
+        revenue - poslina_and_perevod - sita - spravka - obmen_prav, 2)
+    metrics['без_пошлин_переводов_сит_справок_с_обменом_прав'] = round(revenue - poslina_and_perevod - sita - spravka,
+                                                                       2)
 
     return metrics
 
 
-def generate_report_file(services: dict, path: str, metrics: dict) -> int:
-    """Возвращает 1, если report-файл был сформирован и закрыт.
-    Файл формируется в заранее оговоренном формате. Формат меняется по необходимости.
+def generate_report_message(services: dict, metrics: dict) -> str:
+    """Созвращает готовое report-сообщение
 
     Args:
-        services (dict): словарь с данными для записи в отчет-файл.
-        path (str): путь к .csv файлу, на основе которого был сформирован словарь services.
+        services (dict): словарь с данными для записи в отчет-файл
         metrics (dict): словарь расчитанных метрик для вывода
 
     Returns:
-        1 (int): в случае успешного закрытия файла
+        (str): в случае успешной генерации сообщения
     """
-
-    file_name: str = exstract_basename(path)
-    file_result_name: str = datetime.datetime.now().strftime(f"report_%Y-%m-%d_%H-%M-%S_{file_name}.txt")
-    home_directory: str = os.path.expanduser('~')
-    directory_to_write: str = home_directory + r'\Desktop'
-    result_file: str = fr"{directory_to_write}\{file_result_name}"
 
     metrics = metrics.copy()
     # Форматирую числа для записи в файл
     for key, value in metrics.items():
         metrics[key] = format_number_with_spaces(value)
 
-    with open(result_file, 'w', encoding='utf8') as file:
-        file.write(f'Расчет\nОборот: {metrics["revenue"]} евро\n\n')
-        file.write(f'🧡Без пошлин и переводов: {metrics["без_пошлин_переводов"]} евро\n\n')
-        file.write(
-            f'🩵Без пошлин, переводов, сит, справок и обмена прав: {metrics["без_пошлин_переводов_сит_справок_обмена_прав"]} евро\n\n')
-        file.write(
-            f'💚Без пошлин, переводов, сит, справок, с обменом прав: {metrics["без_пошлин_переводов_сит_справок_с_обменом_прав"]} евро\n\n')
+    result_message = ""
+    result_message += f'Расчет\nОборот: {metrics["revenue"]} евро\n\n'
+    result_message += f'🧡Без пошлин и переводов: {metrics["без_пошлин_переводов"]} евро\n\n'
+    result_message += f'🩵Без пошлин, переводов, сит, справок и обмена прав: {metrics["без_пошлин_переводов_сит_справок_обмена_прав"]} евро\n\n'
+    result_message += f'💚Без пошлин, переводов, сит, справок, с обменом прав: {metrics["без_пошлин_переводов_сит_справок_с_обменом_прав"]} евро\n\n'
 
-        for service, value in services.items():
-            number_sales_service: int = value['count']
-            if number_sales_service == 0:
-                continue
-            sums: str = ' + '.join(value['details'])
-            total_sum = format_number_with_spaces(value["summa"])
-            file.write(f'{service}\n{value["count"]} шт: {sums}\n💰Сумма {total_sum} евро\n\n')
+    for service, value in services.items():
+        number_sales_service: int = value['count']
+        if number_sales_service == 0:
+            continue
+        sums: str = ' + '.join(value['details'])
+        total_sum = format_number_with_spaces(value["summa"])
+        result_message += f'{service}\n{value["count"]} шт: {sums}\n💰Сумма {total_sum} евро\n\n'
 
-    return 1
+    return result_message
 
 
-def process_service_data(path_file: str) -> dict[str, ServiceInfo]:
-    """Возвращает сформированный словарь услуг. Значения словаря в таком формате (сумма_общая: float, количество:int,
-    суммы_отдельно: list[str]).
+def find_index_column_service(head_table: list[str]) -> int:
+    """Возвращает индекс столбца 'Услуга' в шапке таблицы
 
     Args:
-        path_file (str): путь к .cvs файлу для анализа.
-        Файл должен быть в определенномм формете Дата, Сумма, Услуга и т.д.
+        head_table (list): список с заголовками колонок таблицы
 
     Returns:
-        dict: заполненный словарь, в формате услуга: [сумма_общая, количество, суммы_отдельно].
+        index (int): индекс столбца 'Услуга' в шапке таблицы
+    """
+
+    for i in range(len(head_table)):
+        item = head_table[i].strip().lower()
+        if item in ('услуга', 'ыслуга', 'uslyga'):
+            return i
+
+
+def process_service_data(file: io.BytesIO) -> dict[str, ServiceInfo]:
+    """Возвращает сформированный словарь услуг. Значения словаря в таком формате (сумма_общая: float, количество:int,
+    суммы_отдельно: list[str])
+
+    Args:
+        file (BytesIO): файл csv в виде объекта класса UploadedFile, который является подклассом BytesIO
+
+    Returns:
+        dict: заполненный словарь, в формате услуга: [сумма_общая, количество, суммы_отдельно]
     """
 
     services: dict[str, ServiceInfo] = {
@@ -174,34 +179,35 @@ def process_service_data(path_file: str) -> dict[str, ServiceInfo]:
         'Цифровой кочевник': {'summa': 0, 'count': 0, 'details': []}
     }
 
-    with open(path_file, encoding='utf-8') as file:
-        reader = csv.reader(file)
-        head = next(reader)
+    stringio = StringIO(file.getvalue().decode("utf-8"))
+    csv_reader = csv.reader(stringio)
+    head = next(csv_reader)
+    column_service_index = find_index_column_service(head)
 
-        # заполнение словаря
-        for row in reader:
-            service: str = row[7]
-            if service == '' or service.isdigit():
-                continue
+    # заполнение словаря
+    for row in csv_reader:
+        service: str = row[column_service_index]  # NOTE: положение столбца 'Услуга' в таблице может меняться
+        if service == '' or service.isdigit():
+            continue
 
-            summa: str = normalize_number(row[1])
-            got_service = services.get(service, -1)
-            if got_service == -1:
-                services[service] = {'summa': 0, 'count': 0, 'details': []}
-                got_service = services.get(service)
+        summa: str = normalize_number(row[1])
+        got_service = services.get(service, -1)
+        if got_service == -1:
+            services[service] = {'summa': 0, 'count': 0, 'details': []}
+            got_service = services.get(service)
 
-            got_service['summa'] += float(summa)
-            got_service['count'] += 1
-            got_service['details'].append(summa)
+        got_service['summa'] += float(summa)
+        got_service['count'] += 1
+        got_service['details'].append(summa)
 
     return services
 
 
 def exstract_basename(path: str) -> str:
-    """Возвращает имя файла, извлеченное из пути к нему.
+    """Возвращает имя файла, извлеченное из пути к нему
 
     Args:
-        path (str): путь к файлу.
+        path (str): путь к файлу
 
     Returns:
         str: извлеченное имя файла
@@ -212,10 +218,10 @@ def exstract_basename(path: str) -> str:
 
 def normalize_number(number: str) -> str:
     """Возвращает строку с числом, приведенным к правильному виду. Запятая заменяется на точку,
-    пробелы удаляются, удалены неразрывные пробелы (\xa0).
+    пробелы удаляются, удалены неразрывные пробелы (\xa0)
 
     Args:
-        number (str): число для форматирования.
+        number (str): число для форматирования
 
     Returns:
         str: отформатированное число"""
@@ -226,60 +232,20 @@ def normalize_number(number: str) -> str:
     return number
 
 
-def is_csv_file(path: str) -> bool:
-    """
-    Возвращает True, если файл по указанному пути имеет расширение .csv и False в ином случае. Если параметр path
-    пустой, возвращает False.
-    Args:
-        path (str): путь к файлу с конечным именем и типом файла.
-
-    Returns:
-        bool: True - валидный тип. False - не валидный тип.
-    """
-    if not path:
-        return False
-
-    filename, file_extension = os.path.splitext(path)
-    if file_extension == '.csv':
-        return True
-    return False
-
-
-def select_file():
-    file_path = filedialog.askopenfilename()
-
-    if file_path:
-        while not is_csv_file(file_path) and file_path != '':
-            messagebox.showwarning(title='Ошибка!',
-                                   message='Выбран неверный файл! С типом НЕ .csv\nПопробуйте еще раз!')
-            file_path = filedialog.askopenfilename()
-
-        if file_path:
-            messagebox.showinfo("Файл выбран", f"Вы выбрали файл: {file_path}")
-            root.destroy()
-
-    global path
-    path = file_path
-
-
 def main():
     st.title("Формирование отчета за месяц")
+    uploaded_file = st.file_uploader('Выберите .csv файл.\nЕго нужно импортировать из Google Sheets',
+                                     type='csv')
 
-    st.write("Привет! Это мой первый сайт на Streamlit, работающий в облаке.")
-    st.sidebar.title("About")
-    uploaded_file = st.file_uploader('Выберите .csv файл.\nПредварительно его нужно испортировать из Google Sheet.',
-                                     type=('.csv'))
-
-    def t():
-        st.text_area('Button')
-    st.button('Сгенерировать отчет', on_click=t)
-    exit()
-
-    services: dict = process_service_data(uploaded_file)
-    if generate_report_file(services, uploaded_file, calculation_metrics(services)):
-        messagebox.showinfo(message='Ваш отчет готов, находиться на рабочем столе!')
-
-    pprint.pprint(services)
+    if st.button('Сгенерировать отчет', type='primary'):
+        if uploaded_file is None:
+            st.error('Выберите файл!')
+        else:
+            services: dict = process_service_data(uploaded_file)
+            result_message = generate_report_message(services, calculation_metrics(services))
+            st.code(result_message)
+            st.toast('Не забудьте скопировать результат', icon='📋')
+            pprint.pprint(services)
 
 
 if __name__ == '__main__':
