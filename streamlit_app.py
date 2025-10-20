@@ -1,6 +1,6 @@
 """
-Задача этого файла сфорировать текстовое сообщение-отчет, по шаблону. Внутри содержиться информация о суммах,
-количестве проданных услуг, обороте и других метриках, которые расчитываються на основе csv файла. CSV файл
+Задача этого файла сформировать текстовое сообщение-отчет, по шаблону. Внутри содержится информация о суммах,
+количестве проданных услуг, обороте и других метриках, которые расчитываются на основе csv файла. CSV файл
 предварительно импортируется из Google Sheets, по одельному месяцу.
 """
 
@@ -8,7 +8,6 @@ import io
 import streamlit as st
 import csv
 import pprint
-import os
 
 from io import StringIO
 from typing import TypedDict
@@ -77,21 +76,25 @@ def calculation_metrics(services: dict) -> dict:
         2)
     metrics['пошлина_перевод'] = poslina_and_perevod
 
-    sita: float = services.get('Сита')['summa']
-    metrics['сита'] = sita
+    sita: dict | int = services.get('Сита', 0)
+    if sita != 0:
+        metrics['сита'] = sita['summa']
 
-    spravka: float = services.get('Справка')['summa']
-    metrics['справка'] = spravka
+    spravka: dict | int = services.get('Справка', 0)
+    if spravka != 0:
+        metrics['справка'] = spravka['summa']
 
-    obmen_prav: float = services.get('Под ключ права обмен')['summa']
-    metrics['обмен_прав'] = obmen_prav
+    obmen_prav: dict | int = services.get('Под ключ права обмен', 0)
+    if obmen_prav != 0:
+        metrics['обмен_прав'] = obmen_prav['summa']
 
     metrics['без_пошлин_переводов'] = revenue - poslina_and_perevod
     metrics[
         'без_пошлин_переводов_сит_справок_обмена_прав'] = round(
-        revenue - poslina_and_perevod - sita - spravka - obmen_prav, 2)
-    metrics['без_пошлин_переводов_сит_справок_с_обменом_прав'] = round(revenue - poslina_and_perevod - sita - spravka,
-                                                                       2)
+        revenue - poslina_and_perevod - metrics['сита'] - metrics['справка'] - metrics['обмен_прав'], 2)
+    metrics['без_пошлин_переводов_сит_справок_с_обменом_прав'] = round(
+        revenue - poslina_and_perevod - metrics['сита'] - metrics['справка'],
+        2)
 
     return metrics
 
