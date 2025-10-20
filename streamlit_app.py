@@ -156,28 +156,7 @@ def process_service_data(file: io.BytesIO) -> dict[str, ServiceInfo]:
         dict: заполненный словарь, в формате услуга: [сумма_общая, количество, суммы_отдельно]
     """
 
-    services: dict[str, ServiceInfo] = {
-        'Консультация': {'summa': 0, 'count': 0, 'details': []},
-        'Бакалавр': {'summa': 0, 'count': 0, 'details': []},
-        'Магистратура': {'summa': 0, 'count': 0, 'details': []},
-        'NIE': {'summa': 0, 'count': 0, 'details': []},
-        'Доверенность': {'summa': 0, 'count': 0, 'details': []},
-        'ФОП/автономо': {'summa': 0, 'count': 0, 'details': []},
-        'Школа испанского': {'summa': 0, 'count': 0, 'details': []},
-        'Омологация аттестата': {'summa': 0, 'count': 0, 'details': []},
-        'Омологация диплома': {'summa': 0, 'count': 0, 'details': []},
-        'ВЗ1': {'summa': 0, 'count': 0, 'details': []},
-        'Под ключ права обмен': {'summa': 0, 'count': 0, 'details': []},
-        'Сита': {'summa': 0, 'count': 0, 'details': []},
-        'Продление студ визы': {'summa': 0, 'count': 0, 'details': []},
-        'Языковая школа': {'summa': 0, 'count': 0, 'details': []},
-        'Пошлина': {'summa': 0, 'count': 0, 'details': []},
-        'Перевод': {'summa': 0, 'count': 0, 'details': []},
-        'Справка': {'summa': 0, 'count': 0, 'details': []},
-        'Другая услуга': {'summa': 0, 'count': 0, 'details': []},
-        'Модификация': {'summa': 0, 'count': 0, 'details': []},
-        'Цифровой кочевник': {'summa': 0, 'count': 0, 'details': []}
-    }
+    services: dict[str, ServiceInfo] = {}
 
     stringio = StringIO(file.getvalue().decode("utf-8"))
     csv_reader = csv.reader(stringio)
@@ -190,15 +169,14 @@ def process_service_data(file: io.BytesIO) -> dict[str, ServiceInfo]:
         if service == '' or service.isdigit():
             continue
 
-        summa: str = normalize_number(row[1])
         got_service = services.get(service, -1)
         if got_service == -1:
             services[service] = {'summa': 0, 'count': 0, 'details': []}
-            got_service = services.get(service)
 
-        got_service['summa'] += float(summa)
-        got_service['count'] += 1
-        got_service['details'].append(summa)
+        summa: str = normalize_number(row[1])
+        services[service]['summa'] += float(summa)
+        services[service]['count'] += 1
+        services[service]['details'].append(summa)
 
     return services
 
