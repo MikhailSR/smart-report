@@ -203,19 +203,6 @@ def process_service_data(file: io.BytesIO) -> dict[str, ServiceInfo]:
     return services
 
 
-def exstract_basename(path: str) -> str:
-    """Возвращает имя файла, извлеченное из пути к нему
-
-    Args:
-        path (str): путь к файлу
-
-    Returns:
-        str: извлеченное имя файла
-    """
-
-    return os.path.basename(path)
-
-
 def normalize_number(number: str) -> str:
     """Возвращает строку с числом, приведенным к правильному виду. Запятая заменяется на точку,
     пробелы удаляются, удалены неразрывные пробелы (\xa0)
