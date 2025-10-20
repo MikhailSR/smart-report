@@ -149,7 +149,7 @@ class TestCalculationMetrics(unittest.TestCase):
                                   'справка': 0.0,
                                   'без_пошлин_переводов_сит_справок_обмена_прав': 24192.0 - 4977.0 - 450.0 - 2000.0,
                                   'без_пошлин_переводов_сит_справок_с_обменом_прав': 24192.0 - 4977.0 - 450.0}
-        self.assertEqual(form_report.calculation_metrics(test_dict), expected_metrics)
+        self.assertEqual(test_file.calculation_metrics(test_dict), expected_metrics)
 
 
 class TestFormatNumberWithSpaces(unittest.TestCase):
