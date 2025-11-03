@@ -1,5 +1,5 @@
 import unittest
-import streamlit_app as test_file
+import pages.smart_report as test_file
 
 
 class TestNormalizeNumber(unittest.TestCase):
