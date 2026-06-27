@@ -120,6 +120,7 @@ def generate_report_message(services: dict, metrics: dict) -> str:
     result_message += f'🧡Без пошлин и переводов: {metrics["без_пошлин_переводов"]} евро\n\n'
     result_message += f'🩵Без пошлин, переводов, сит, справок и обмена прав: {metrics["без_пошлин_переводов_сит_справок_обмена_прав"]} евро\n\n'
     result_message += f'💚Без пошлин, переводов, сит, справок, с обменом прав: {metrics["без_пошлин_переводов_сит_справок_с_обменом_прав"]} евро\n\n'
+    result_message += f'🖤Возвраты: \n\n'
 
     for service, value in services.items():
         number_sales_service: int = value['count']
