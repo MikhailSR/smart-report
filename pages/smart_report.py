@@ -126,7 +126,11 @@ def generate_report_message(services: dict, metrics: dict) -> str:
         number_sales_service: int = value['count']
         if number_sales_service == 0:
             continue
-        sums: str = ' + '.join(value['details'])
+
+        if service == 'Другая услуга':
+            sums: str = '\n'.join(value['details'])
+        else:
+            sums: str = ' + '.join(value['details'])
         total_sum = format_number_with_spaces(value["summa"])
         result_message += f'{service}\n{value["count"]} шт: {sums}\n💰Сумма {total_sum} евро\n\n'
 
